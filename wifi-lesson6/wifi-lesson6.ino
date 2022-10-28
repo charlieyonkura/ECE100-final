@@ -16,8 +16,8 @@ int angle=90;
 
 SoftwareSerial softserial(4, 5); // D4 to ESP_TX, D5 to ESP_RX by default
 
-char ssid[] = "LAPTOP-CKEQAMAM 6750";           // replace *** with your wifi network SSID (name)
-char pass[] = "=33pM059";        // replace *** with your wifi network password
+char ssid[] = "LAPTOP-CKEQAMAM";           // replace *** with your wifi network SSID (name)
+char pass[] = "2824hhasdo";        // replace *** with your wifi network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 unsigned int local_port = 8888;        // local port to listen for UDP packets
@@ -27,10 +27,36 @@ const int UDP_PACKET_SIZE = 255;  // UDP timestamp is in the first 48 bytes of t
 const int UDP_TIMEOUT = 3000;    // timeout in miliseconds to wait for an UDP packet to arrive
 
 char packetBuffer[255];
+String packetBufferStr;
+int controlArraySize = 5;
+int controlArray[5];
 PWMServo head;
 
 // A UDP instance to let us send and receive packets over UDP
 WiFiEspUDP Udp;
+
+/*int parseString(char str[]) {
+  int a[20]; //change size
+  int j = 0;
+  char temp[3];
+  for (int i = 0; i < strlen(str); i++) {
+    while (!str[i] == ',') {
+      temp += str[i];
+    }
+    a[j] = atoi(temp);
+    j++;
+    temp = "";
+  }
+  return a;
+}*/
+
+/*int parseString(String str) {
+  int a[5];
+  for (int i = 0; i < 5; i++){
+    a[i] = str.substring(4*i, 4*i + 3).toInt();
+  }
+  return a;
+}*/
 
 void setup()
 {
@@ -81,26 +107,18 @@ void loop()
 
   int packetSize = Udp.parsePacket();
   if (packetSize) {
-                               // if you get a client,
       //Serial.print("Received packet of size ");
       //Serial.println(packetSize);
-      int len = Udp.read(packetBuffer, 255);
-
-      Serial.println(packetBuffer);
-      
+      Udp.read(packetBuffer, 255);
       Udp.flush();
-      if (len > 0)  packetBuffer[len] = 0;
-  
-      if(packetBuffer[0]=='S');
-      {   
-        if(packetBuffer[1] == 'T')
-        {
-            int angle = get_value(packetBuffer);
-            angle = map(angle, 0, 99,  0,180);
-            Serial.println(angle);
-            head.write(angle);      
-         }   
-      } //END OF ACTION SWITCH
+      
+      Serial.println(packetBuffer);
+      packetBufferStr = packetBuffer;
+      for (int i = 0; i < controlArraySize; i++){
+        controlArray[i] = packetBufferStr.substring(4*i, 4*i + 3).toInt();
+      }
+      
+      
   }
 }
 int get_value(char bf[])
