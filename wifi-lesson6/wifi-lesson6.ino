@@ -11,8 +11,13 @@
 #include "WiFiEsp.h"
 #include <WiFiEspUdp.h>
 #include "SoftwareSerial.h"
-#define SERVO_PIN 9
-int angle=90;
+
+#define ENA 3
+#define ENB 6
+#define IN1 8
+#define IN2 9
+#define IN3 10
+#define IN4 11
 
 SoftwareSerial softserial(4, 5); // D4 to ESP_TX, D5 to ESP_RX by default
 
@@ -30,36 +35,54 @@ char packetBuffer[255];
 String packetBufferStr;
 int controlArraySize = 5;
 int controlArray[5];
-PWMServo head;
+int LX;
+int LY;
+int RX;
+int RY;
+int button;
+boolean L;
+boolean R;
 
-// A UDP instance to let us send and receive packets over UDP
+
+PWMServo head;
 WiFiEspUDP Udp;
 
-/*int parseString(char str[]) {
-  int a[20]; //change size
-  int j = 0;
-  char temp[3];
-  for (int i = 0; i < strlen(str); i++) {
-    while (!str[i] == ',') {
-      temp += str[i];
-    }
-    a[j] = atoi(temp);
-    j++;
-    temp = "";
-  }
-  return a;
-}*/
+void forward() {
+  digitalWrite(IN1,HIGH);
+  digitalWrite(IN2,LOW);
+  digitalWrite(IN3,HIGH);
+  digitalWrite(IN4,LOW);
+}
+void left() {
+  digitalWrite(IN1,HIGH);
+  digitalWrite(IN2,LOW);
+  digitalWrite(IN3,LOW);
+  digitalWrite(IN4,HIGH);
+}
+void right() {
+  digitalWrite(IN1,LOW);
+  digitalWrite(IN2,HIGH);
+  digitalWrite(IN3,HIGH);
+  digitalWrite(IN4,LOW);
+}
+void back() {
+  digitalWrite(IN1,LOW);
+  digitalWrite(IN2,HIGH);
+  digitalWrite(IN3,LOW);
+  digitalWrite(IN4,HIGH);
+}
+void stop() {
+  digitalWrite(IN1,LOW);
+  digitalWrite(IN2,LOW);
+  digitalWrite(IN3,LOW);
+  digitalWrite(IN4,LOW);
+}
+void speed(int L, int R) {
+  analogWrite(ENB,L);
+  analogWrite(ENA,R);
+}
 
-/*int parseString(String str) {
-  int a[5];
-  for (int i = 0; i < 5; i++){
-    a[i] = str.substring(4*i, 4*i + 3).toInt();
-  }
-  return a;
-}*/
-
-void setup()
-{
+void setup() {
   Serial.begin(9600);   // initialize serial for debugging
   softserial.begin(115200);
   softserial.write("AT+CIOBAUD=9600\r\n");
@@ -72,7 +95,6 @@ void setup()
     Serial.println(WiFi.SSID(i));
   }*/
 
-   
   // check for the presence of the shield
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
@@ -87,24 +109,10 @@ void setup()
     // Connect to WPA/WPA2 network
     status = WiFi.begin(ssid, pass);
   }
-
-  // you're connected now, so print out the data
-  Serial.println("You're connected to the network, move the top slider to control servo!");
-  
   Udp.begin(local_port);
-
-   //head.attach(SERVO_PIN);
-   //head.write(0);
-   //delay(500);
-   //head.write(180);
-   //delay(500);
-   //head.write(90);
-   
 }
 
-void loop()
-{
-
+void loop() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
       //Serial.print("Received packet of size ");
@@ -112,15 +120,32 @@ void loop()
       Udp.read(packetBuffer, 255);
       Udp.flush();
       
-      Serial.println(packetBuffer);
+      //Serial.println(packetBuffer);
       packetBufferStr = packetBuffer;
       for (int i = 0; i < controlArraySize; i++){
         controlArray[i] = packetBufferStr.substring(4*i, 4*i + 3).toInt();
       }
-      
-      
+      LX = map(controlArray[0], 0, 255, -255, 255);
+      LY = map(controlArray[1], 255, 0, -255, 255);
+      RX = map(controlArray[2], 0, 255, -255, 255);
+      RY = map(controlArray[3], 255, 0, -255, 255);
+      Serial.print(LX);
+      Serial.print(" ");
+      Serial.print(LY);
+      Serial.print(" ");
+      Serial.print(RX);
+      Serial.print(" ");
+      Serial.print(RY);
+      Serial.print(" ");
+      Serial.println("");
+      if (LX < 0) {
+        forward();
+        speed(LY - abs(LX), LY);
+      }
   }
+  
 }
+
 int get_value(char bf[])
 {
   int value = bf[3]- '0';
