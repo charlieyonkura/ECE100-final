@@ -1,12 +1,3 @@
-/*  ___   ___  ___  _   _  ___   ___   ____ ___  ____  
- * / _ \ /___)/ _ \| | | |/ _ \ / _ \ / ___) _ \|    \ 
- *| |_| |___ | |_| | |_| | |_| | |_| ( (__| |_| | | | |
- * \___/(___/ \___/ \__  |\___/ \___(_)____)___/|_|_|_|
- *                  (____/ 
- * Osoyoo Wifi IoT  lesson 6
- * Remote control Servo over UDP
- * tutorial url: https://osoyoo.com/?p=32612
- */
 #include <PWMServo.h>
 #include "WiFiEsp.h"
 #include <WiFiEspUdp.h>
@@ -19,14 +10,14 @@
 #define IN3 10
 #define IN4 11
 
-SoftwareSerial softserial(4, 5); // D4 to ESP_TX, D5 to ESP_RX by default
+SoftwareSerial softserial(4, 5);
 
-char ssid[] = "LAPTOP-CKEQAMAM";           // replace *** with your wifi network SSID (name)
-char pass[] = "2824hhasdo";        // replace *** with your wifi network password
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
+char ssid[] = "LAPTOP-CKEQAMAM";
+char pass[] = "2824hhasdo";
+int status = WL_IDLE_STATUS;
 
-unsigned int local_port = 8888;        // local port to listen for UDP packets
-unsigned int remote_port = 8888;        // remote port to listen for UDP packets
+unsigned int local_port = 8888;
+unsigned int remote_port = 8888;
 
 const int UDP_PACKET_SIZE = 255;  // UDP timestamp is in the first 48 bytes of the message
 const int UDP_TIMEOUT = 3000;    // timeout in miliseconds to wait for an UDP packet to arrive
@@ -35,17 +26,17 @@ char packetBuffer[255];
 String packetBufferStr;
 int controlArraySize = 5;
 int controlArray[5];
-int LX;
-int LY;
-int RX;
-int RY;
+long LX; //longs to do sq and sqrt ops
+long LY;
+long RX;
+long RY;
 int button;
 boolean L;
 boolean R;
 
-
 PWMServo head;
 WiFiEspUDP Udp;
+IPAddress laptopIP(192,168,137,1);
 
 void forward() {
   digitalWrite(IN1,HIGH);
@@ -83,33 +74,35 @@ void speed(int L, int R) {
 }
 
 void setup() {
-  Serial.begin(9600);   // initialize serial for debugging
+  Serial.begin(9600);
   softserial.begin(115200);
   softserial.write("AT+CIOBAUD=9600\r\n");
   softserial.write("AT+RST\r\n");
-  softserial.begin(9600);    // initialize serial for ESP module
-  WiFi.init(&softserial);    // initialize ESP module
+  softserial.begin(9600);
+  WiFi.init(&softserial);
 
   /*int n = WiFi.scanNetworks();
   for (int i = 0; i < n; i++) {
     Serial.println(WiFi.SSID(i));
   }*/
 
-  // check for the presence of the shield
+
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
     // don't continue
     while (true);
   }
-
-  // attempt to connect to WiFi network
-  while ( status != WL_CONNECTED) {
+  
+  while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network
     status = WiFi.begin(ssid, pass);
   }
   Udp.begin(local_port);
+  Udp.beginPacket(laptopIP, 8888);
+  Udp.write("hi mom");
+  Udp.endPacket();
 }
 
 void loop() {
@@ -129,35 +122,30 @@ void loop() {
       LY = map(controlArray[1], 255, 0, -255, 255);
       RX = map(controlArray[2], 0, 255, -255, 255);
       RY = map(controlArray[3], 255, 0, -255, 255);
-      Serial.print(LX);
-      Serial.print(" ");
-      Serial.print(LY);
-      Serial.print(" ");
-      Serial.print(RX);
-      Serial.print(" ");
-      Serial.print(RY);
-      Serial.print(" ");
-      Serial.println("");
-      if (LX < 0) {
-        forward();
-        speed(LY - abs(LX), LY);
-      }
-  }
-  
-}
 
-int get_value(char bf[])
-{
-  int value = bf[3]- '0';
-  
-  for(int i = 4; i < 6; i++)
-  {
-    if(bf[i] < '0' || bf[i] > '9')
-      break;
-    else
-      value = value * 10 + bf[i] - '0';
-  }
-  
-  return value;
+      int intensity = min(sqrt(sq(LX) + sq(LY)), 255); //sometimes LX*LX is negative or LY*LY is negative???
+      Serial.print(intensity);
+      Serial.print(" ");
+      Serial.print(LX * LX);
+      Serial.print(" ");
+      Serial.println(LY * LY);
+      speed(intensity, intensity);
+      //speed(0,0);
+      if (intensity < 40) { //deadzone with radius 40
+        stop();
+        Serial.println("Stop");
+      } else if (LY > abs(LX)) {
+        forward();
+        Serial.println("Forward");
+      } else if ((-1*LY) > abs(LX)) {
+        back();
+        Serial.println("Back");
+      } else if (LX > abs(LY)) {
+        right();
+        Serial.println("Right");
+      } else if ((-1*LX) > abs(LY)) {
+        left();
+        Serial.println("Left");
+      }
+  } 
 }
- 

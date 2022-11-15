@@ -4,13 +4,27 @@ import time
 
 contVID = 0x054c
 contPID = 0x09cc
-ip = "192.168.137.37"
+arduino_mac = "e0:98:06:22:fd:ef"
+laptop_mac = "12:F4:8D:87:5C:CD"
+interface = "Microsoft Wi-Fi Direct Virtual Adapter"
+ip = ""
 port = 8888
 LX = 5
 LY = 7
 RX = 9
 RY = 11
 dpad_index = 0
+
+i = 0
+"""while ip == "":
+	#packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="192.168.137."+str(i))
+	packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="192.168.137.110")
+	unanswered, answered = srp(packet, iface=interface, timeout=3)
+	print(answered)
+	if getmacbyip("192.168.137." + str(i)) == arduino_mac:
+		ip = "192.168.137." + str(i)
+	i+=1
+"""
 
 class ControlArray:
 	def __init__(self, lx, ly, rx, ry, button) -> None:
@@ -42,6 +56,11 @@ controller = hid.Device(vid = contVID, pid = contPID)
 #array[7] L Y
 #array[9] R X
 #array[11] R Y
+
+print("Listening for IP")
+packets = sniff(iface=interface, filter="udp port 8888", count=1)
+ip = packets[0][IP].src
+print("Received", ip)
 
 prev = [0] * 6
 
