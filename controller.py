@@ -27,8 +27,8 @@ i = 0
 """
 
 class ControlArray:
-	def __init__(self, lx, ly, rx, ry, button) -> None:
-		self.array = [int(lx), int(ly), int(rx), int(ry), button]
+	def __init__(self, lx, ly, rx, ry, button, dpad) -> None:
+		self.array = [int(lx), int(ly), int(rx), int(ry), button, dpad]
 	def __repr__(self) -> str:
 		s = ""
 		for item in self.array:
@@ -65,9 +65,8 @@ print("Received", ip)
 prev = [0] * 6
 
 while True:
-	array = []
 	binArray = controller.read(16)
-	q = ControlArray(binArray[1], binArray[2], binArray[3], binArray[4], binArray[6])
+	q = ControlArray(binArray[1], binArray[2], binArray[3], binArray[4], binArray[6], binArray[5])
 	#print(mapFromTo(binArray[1], 0, 255, -255, 255), mapFromTo(binArray[2], 255, 0, -255, 255), mapFromTo(binArray[3], 0, 255, -255, 255), mapFromTo(binArray[4], 255, 0, -255, 255))
 	#q = ControlArray(mapFromTo(binArray[1], 0, 255, -255, 255), mapFromTo(binArray[2], 255, 0, -255, 255), mapFromTo(binArray[3], 0, 255, -255, 255), mapFromTo(binArray[4], 255, 0, -255, 255), binArray[6])
 	print(q)

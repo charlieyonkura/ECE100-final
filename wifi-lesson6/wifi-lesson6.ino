@@ -24,15 +24,14 @@ const int UDP_TIMEOUT = 3000;    // timeout in miliseconds to wait for an UDP pa
 
 char packetBuffer[255];
 String packetBufferStr;
-int controlArraySize = 5;
-int controlArray[5];
+int controlArraySize = 6;
+int controlArray[6];
 long LX; //longs to do sq and sqrt ops
 long LY;
 long RX;
 long RY;
 int button;
-boolean L;
-boolean R;
+int dpad;
 
 PWMServo head;
 WiFiEspUDP Udp;
@@ -81,17 +80,16 @@ void setup() {
   softserial.begin(9600);
   WiFi.init(&softserial);
 
-  /*int n = WiFi.scanNetworks();
-  for (int i = 0; i < n; i++) {
-    Serial.println(WiFi.SSID(i));
-  }*/
-
-
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
     // don't continue
     while (true);
   }
+
+  /*int n = WiFi.scanNetworks();
+  for (int i = 0; i < n; i++) {
+    Serial.println(WiFi.SSID(i));
+  }*/
   
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
@@ -122,16 +120,13 @@ void loop() {
       LY = map(controlArray[1], 255, 0, -255, 255);
       RX = map(controlArray[2], 0, 255, -255, 255);
       RY = map(controlArray[3], 255, 0, -255, 255);
-
-      int intensity = min(sqrt(sq(LX) + sq(LY)), 255); //sometimes LX*LX is negative or LY*LY is negative???
-      Serial.print(intensity);
-      Serial.print(" ");
-      Serial.print(LX * LX);
-      Serial.print(" ");
-      Serial.println(LY * LY);
-      speed(intensity, intensity);
-      //speed(0,0);
-      if (intensity < 40) { //deadzone with radius 40
+      button = controlArray[4];
+      dpad = controlArray[5];
+      
+      int Lintensity = min(sqrt(sq(LX) + sq(LY)), 255); //LX and LY are longs so that no overflow occurs
+      int Rintensity = min(sqrt(sq(RX) + sq(RY)), 255);
+      speed(Lintensity, Lintensity);
+      if (Lintensity < 40) { //deadzone with radius 40
         stop();
         Serial.println("Stop");
       } else if (LY > abs(LX)) {
@@ -146,6 +141,27 @@ void loop() {
       } else if ((-1*LX) > abs(LY)) {
         left();
         Serial.println("Left");
+      }
+      if (bitRead(button, 0)) {//L1
+        Serial.println("Close claw");
+      } else if (bitRead(button, 1)) { //R1
+        Serial.println("Open claw");
+      }
+      if (dpad == 0) { //up
+        Serial.println("Elbow up");
+      } else if (dpad == 4) { //down
+        Serial.println("Elbow down");
+      }
+      if (Rintensity < 40) { //deadzone with radius 40
+
+      } else if (RY > abs(RX)) {
+        Serial.println("Shoulder up");
+      } else if ((-1*RY) > abs(RX)) {
+        Serial.println("Shoulder down");
+      } else if (RX > abs(RY)) {
+        Serial.println("Rotate right");
+      } else if ((-1*RX) > abs(RY)) {
+        Serial.println("Rotate left");
       }
   } 
 }
