@@ -15,17 +15,6 @@ RX = 9
 RY = 11
 dpad_index = 0
 
-i = 0
-"""while ip == "":
-	#packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="192.168.137."+str(i))
-	packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="192.168.137.110")
-	unanswered, answered = srp(packet, iface=interface, timeout=3)
-	print(answered)
-	if getmacbyip("192.168.137." + str(i)) == arduino_mac:
-		ip = "192.168.137." + str(i)
-	i+=1
-"""
-
 class ControlArray:
 	def __init__(self, lx, ly, rx, ry, button, dpad) -> None:
 		self.array = [int(lx), int(ly), int(rx), int(ry), button, dpad]
@@ -34,11 +23,6 @@ class ControlArray:
 		for item in self.array:
 			s += f"{item:03}" + ","
 		return s[:len(s)-1]
-
-def mapFromTo(x,a,b,c,d):
-   y=(x-a)/(b-a)*(d-c)+c
-   return y
-
 
 """with hid.Device(contVID, contPID) as h:
 	print(f'Device manufacturer: {h.manufacturer}')
@@ -50,25 +34,15 @@ def mapFromTo(x,a,b,c,d):
 
 controller = hid.Device(vid = contVID, pid = contPID)
 
-#Switch Controller:
-#array[1,2,3] buttons
-#array[5] L X
-#array[7] L Y
-#array[9] R X
-#array[11] R Y
-
 print("Listening for IP")
-packets = sniff(iface=interface, filter="udp port 8888", count=1)
-ip = packets[0][IP].src
+#packets = sniff(iface=interface, filter="udp port 8888", count=1)
+#ip = packets[0][IP].src
+ip = "192.168.137.202"
 print("Received", ip)
-
-prev = [0] * 6
 
 while True:
 	binArray = controller.read(16)
 	q = ControlArray(binArray[1], binArray[2], binArray[3], binArray[4], binArray[6], binArray[5])
-	#print(mapFromTo(binArray[1], 0, 255, -255, 255), mapFromTo(binArray[2], 255, 0, -255, 255), mapFromTo(binArray[3], 0, 255, -255, 255), mapFromTo(binArray[4], 255, 0, -255, 255))
-	#q = ControlArray(mapFromTo(binArray[1], 0, 255, -255, 255), mapFromTo(binArray[2], 255, 0, -255, 255), mapFromTo(binArray[3], 0, 255, -255, 255), mapFromTo(binArray[4], 255, 0, -255, 255), binArray[6])
 	print(q)
 	send(IP(dst=ip)/UDP(dport=port)/str(q))
 	time.sleep(0.01)

@@ -1,26 +1,34 @@
-#include <PWMServo.h>
+#include <Servo.h>
 #include "WiFiEsp.h"
 #include <WiFiEspUdp.h>
 #include "SoftwareSerial.h"
 
-#define ENA 3
-#define ENB 6
+#define ESP_TX 4
+#define ESP_RX 7
+#define ENA 10
+#define ENB 11
 #define IN1 8
-#define IN2 9
-#define IN3 10
-#define IN4 11
+#define IN2 13
+#define IN3 2
+#define IN4 12
+#define ROTATE 3
+#define SHOULDER 5
+#define ELBOW 6
+#define CLAW 9
 
-SoftwareSerial softserial(4, 5);
+SoftwareSerial softserial(ESP_TX, ESP_RX);
 
 char ssid[] = "LAPTOP-CKEQAMAM";
 char pass[] = "2824hhasdo";
+//char ssid[] = "RobotArmCar";
+//char pass[] = "dyhbcujvv";
 int status = WL_IDLE_STATUS;
 
 unsigned int local_port = 8888;
 unsigned int remote_port = 8888;
 
-const int UDP_PACKET_SIZE = 255;  // UDP timestamp is in the first 48 bytes of the message
-const int UDP_TIMEOUT = 3000;    // timeout in miliseconds to wait for an UDP packet to arrive
+const int UDP_PACKET_SIZE = 255;
+const int UDP_TIMEOUT = 3000;
 
 char packetBuffer[255];
 String packetBufferStr;
@@ -32,10 +40,16 @@ long RX;
 long RY;
 int button;
 int dpad;
+int rotatePos = 90;
+int shoulderPos = 110;
+//int elbowPos = 10;
 
-PWMServo head;
 WiFiEspUDP Udp;
 IPAddress laptopIP(192,168,137,1);
+Servo rotate;
+Servo shoulder;
+//Servo elbow;
+//Servo claw;
 
 void forward() {
   digitalWrite(IN1,HIGH);
@@ -74,6 +88,21 @@ void speed(int L, int R) {
 
 void setup() {
   Serial.begin(9600);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(ROTATE, OUTPUT);
+  pinMode(SHOULDER, OUTPUT);
+  //pinMode(ELBOW, OUTPUT);
+  //pinMode(CLAW, OUTPUT);
+  rotate.attach(ROTATE);
+  shoulder.attach(SHOULDER);
+  //elbow.attach(ELBOW);
+  //claw.attach(CLAW);
+  
   softserial.begin(115200);
   softserial.write("AT+CIOBAUD=9600\r\n");
   softserial.write("AT+RST\r\n");
@@ -82,7 +111,6 @@ void setup() {
 
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
-    // don't continue
     while (true);
   }
 
@@ -94,7 +122,6 @@ void setup() {
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(ssid);
-    // Connect to WPA/WPA2 network
     status = WiFi.begin(ssid, pass);
   }
   Udp.begin(local_port);
@@ -110,7 +137,6 @@ void loop() {
       //Serial.println(packetSize);
       Udp.read(packetBuffer, 255);
       Udp.flush();
-      
       //Serial.println(packetBuffer);
       packetBufferStr = packetBuffer;
       for (int i = 0; i < controlArraySize; i++){
@@ -142,26 +168,46 @@ void loop() {
         left();
         Serial.println("Left");
       }
-      if (bitRead(button, 0)) {//L1
+      if (bitRead(button, 0)) { //L1
         Serial.println("Close claw");
       } else if (bitRead(button, 1)) { //R1
         Serial.println("Open claw");
       }
       if (dpad == 0) { //up
         Serial.println("Elbow up");
+        /*if (elbowPos > 0) {
+          elbowPos -= 1;
+        }*/
       } else if (dpad == 4) { //down
         Serial.println("Elbow down");
+        /*if (elbowPos < 45) {
+          elbowPos += 1;
+        }*/
       }
       if (Rintensity < 40) { //deadzone with radius 40
 
       } else if (RY > abs(RX)) {
         Serial.println("Shoulder up");
+        if (shoulderPos > 110) {
+          shoulderPos += 1;
+        }
       } else if ((-1*RY) > abs(RX)) {
         Serial.println("Shoulder down");
+        if (shoulderPos < 180) {
+          shoulderPos -= 1;
+        }
       } else if (RX > abs(RY)) {
         Serial.println("Rotate right");
+        if (rotatePos < 180) {
+          rotatePos -= 1;
+        }
       } else if ((-1*RX) > abs(RY)) {
         Serial.println("Rotate left");
+        if (rotatePos > 0) {
+          rotatePos += 1;
+        }
       }
+      shoulder.write(shoulderPos);
+      rotate.write(rotatePos);
   } 
 }
