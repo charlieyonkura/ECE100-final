@@ -1,5 +1,7 @@
 # ECE100 Final Project
 
+Dates: Oct 2022 - Nov 2022
+
 This project uses a bluetooth game controller to control an Arduino-based robot car and 3D-printed robot arm. This project builds on the OSOYOO robot car platform which we had been using throughout the semester. This is the final project for the Electrical and Computer Engineering Introduction to Profession class. A demo video is available at https://www.youtube.com/watch?v=dzqXelYSpZw.
 
 A portion of the MeArm v0.4 is attached to the top of the robot car. The MeArm is a robot arm designed to be laser-cut, but can also be 3D-printed. It uses four SG90 or MG90 servos to move the different components of the arm.
