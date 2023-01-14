@@ -1,4 +1,4 @@
-#ECE100 Final Project
+# ECE100 Final Project
 
 This project uses a bluetooth game controller to control an Arduino-based robot car and 3D-printed robot arm. This project builds on the OSOYOO robot car platform which we had been using throughout the semester. A demo video is available at https://www.youtube.com/watch?v=dzqXelYSpZw.
 
